@@ -55,7 +55,7 @@ class BaseTTS:
                 continue
 
             # 由于其内部机制 每次的queue都只有一个 播放完后虽然当时是0，但很快又被加入新的数据，所以回调只给到1和0
-            
+            send_audio_play_info_to_callback(1)
             self.txt_to_audio(msg)
             print(f"即将播放:{msg}")
             send_audio_play_info_to_callback(1)
