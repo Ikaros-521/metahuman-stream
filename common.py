@@ -42,7 +42,10 @@ def send_request(url: str, method='GET', json_data=None, resp_data_type="json", 
         print.error(traceback.format_exc())
         print.error(f"请求出错: {e}")
         return None
-        
+    except Exception as e:
+        print.error(traceback.format_exc())
+        return None
+           
 # 发送音频播放信息给AI Vtuber的http服务端
 def send_audio_play_info_to_callback(wait_play_audio_num: int=0):
     """发送音频播放信息给AI Vtuber的http服务端
@@ -50,15 +53,19 @@ def send_audio_play_info_to_callback(wait_play_audio_num: int=0):
     Args:
         wait_play_audio_num: 待播放音频数量
     """
-    data = {
-        "type": "audio_playback_completed",
-        "data": {
-            # 待播放音频数量
-            "wait_play_audio_num": wait_play_audio_num,
+    try:
+        data = {
+            "type": "audio_playback_completed",
+            "data": {
+                # 待播放音频数量
+                "wait_play_audio_num": wait_play_audio_num,
+            }
         }
-    }
 
-    # 请求地址为AI Vtuber API接口，如果你改了配置请自行适配
-    resp = send_request('http://127.0.0.1:8082/callback', "POST", data)
+        # 请求地址为AI Vtuber API接口，如果你改了配置请自行适配
+        resp = send_request('http://127.0.0.1:8082/callback', "POST", data)
 
-    return resp
+        return resp
+    except Exception as e:
+        print.error(traceback.format_exc())
+        return None
