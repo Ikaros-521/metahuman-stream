@@ -5,6 +5,7 @@ import queue
 from queue import Queue
 import multiprocessing as mp
 
+from common import send_audio_play_info_to_callback
 
 class BaseASR:
     def __init__(self, opt, parent=None):
@@ -25,6 +26,8 @@ class BaseASR:
         #self.context_size = 10
         self.feat_queue = mp.Queue(2)
 
+        self.my_count = 0
+
         #self.warm_up()
 
     def pause_talk(self):
@@ -38,6 +41,8 @@ class BaseASR:
             frame = self.queue.get(block=True,timeout=0.01)
             type = 0
             #print(f'[INFO] get frame {frame.shape}')
+
+            self.my_count = 0
         except queue.Empty:
             if self.parent and self.parent.curr_state>1: #播放自定义音频
                 frame = self.parent.get_audio_stream(self.parent.curr_state)
@@ -46,12 +51,20 @@ class BaseASR:
                 frame = np.zeros(self.chunk, dtype=np.float32)
                 type = 1
 
+                self.my_count += 1
+                # 200差不多是4s的时间
+                if self.my_count > 200:
+                    send_audio_play_info_to_callback(0)
+                    self.my_count = 0
+
         return frame,type 
 
     def get_audio_out(self):  #get origin audio pcm to nerf
         return self.output_queue.get()
     
     def warm_up(self):
+        self.my_count = 0
+
         for _ in range(self.stride_left_size + self.stride_right_size):
             audio_frame,type=self.get_audio_frame()
             self.frames.append(audio_frame)
