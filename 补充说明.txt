@@ -1,0 +1,5 @@
+CUDA：C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1
+torch： 2.1.0
+VS：2022
+ffmpeg安装后加到环境变量
+只装了MuseTalk的

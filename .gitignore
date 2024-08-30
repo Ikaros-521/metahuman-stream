@@ -16,3 +16,14 @@ pretrained
 .DS_Store
 workspace/log_ngp.txt
 .idea
+
+*.bat
+
+Miniconda3/
+pytorch3d/
+models/
+
+wav2lip/results/*
+
+wav2lip/face_detection/detection/sfd/s3fd.pth
+*.egg
