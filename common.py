@@ -39,11 +39,11 @@ def send_request(url: str, method='GET', json_data=None, resp_data_type="json", 
         return result
 
     except requests.exceptions.RequestException as e:
-        print.error(traceback.format_exc())
-        print.error(f"请求出错: {e}")
+        print(traceback.format_exc())
+        print(f"请求出错: {e}")
         return None
     except Exception as e:
-        print.error(traceback.format_exc())
+        print(traceback.format_exc())
         return None
            
 # 发送音频播放信息给AI Vtuber的http服务端
@@ -67,5 +67,5 @@ def send_audio_play_info_to_callback(wait_play_audio_num: int=0):
 
         return resp
     except Exception as e:
-        print.error(traceback.format_exc())
+        print(traceback.format_exc())
         return None
