@@ -19,7 +19,7 @@ import soundfile as sf
 import av
 from fractions import Fraction
 
-from ttsreal import EdgeTTS,VoitsTTS,XTTS,CosyVoiceTTS
+from ttsreal import EdgeTTS,VoitsTTS,XTTS,CosyVoiceTTS,GSVV2TTS
 
 from tqdm import tqdm
 def read_imgs(img_list):
@@ -40,6 +40,8 @@ class BaseReal:
             self.tts = EdgeTTS(opt,self)
         elif opt.tts == "gpt-sovits":
             self.tts = VoitsTTS(opt,self)
+        elif opt.tts == "gpt-sovits-v2":
+            self.tts = GSVV2TTS(opt,self)
         elif opt.tts == "xtts":
             self.tts = XTTS(opt,self)
         elif opt.tts == "cosyvoice":
