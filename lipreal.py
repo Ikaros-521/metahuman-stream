@@ -270,7 +270,7 @@ class LipReal(BaseReal):
             #     print('sleep qsize=',video_track._queue.qsize())
             #     time.sleep(0.04*video_track._queue.qsize()*0.8)
             if video_track._queue.qsize()>=5:
-                print('sleep qsize=',video_track._queue.qsize())
+                # print('sleep qsize=',video_track._queue.qsize())
                 time.sleep(0.04*video_track._queue.qsize()*0.8)
                 
             # delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms

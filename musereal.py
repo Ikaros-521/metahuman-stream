@@ -304,7 +304,7 @@ class MuseReal(BaseReal):
             #     count=0
             #     totaltime=0
             if video_track._queue.qsize()>=1.5*self.opt.batch_size:
-                print('sleep qsize=',video_track._queue.qsize())
+                # print('sleep qsize=',video_track._queue.qsize())
                 time.sleep(0.04*video_track._queue.qsize()*0.8)
             # if video_track._queue.qsize()>=5:
             #     print('sleep qsize=',video_track._queue.qsize())

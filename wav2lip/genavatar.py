@@ -18,7 +18,7 @@ parser.add_argument('--nosmooth', default=False, action='store_true',
 parser.add_argument('--pads', nargs='+', type=int, default=[0, 10, 0, 0], 
 					help='Padding (top, bottom, left, right). Please adjust to include chin at least')
 parser.add_argument('--face_det_batch_size', type=int, 
-					help='Batch size for face detection', default=16)
+					help='Batch size for face detection', default=8)
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -29,6 +29,7 @@ def osmakedirs(path_list):
         os.makedirs(path) if not os.path.exists(path) else None
 
 def video2imgs(vid_path, save_path, ext = '.png',cut_frame = 10000000):
+    print(f"即将使用OpenCV将视频: {vid_path} 转换为图片")
     cap = cv2.VideoCapture(vid_path)
     count = 0
     while True:
@@ -40,10 +41,11 @@ def video2imgs(vid_path, save_path, ext = '.png',cut_frame = 10000000):
             count += 1
         else:
             break
+    print("视频转换完成")
 
 def read_imgs(img_list):
     frames = []
-    print('reading images...')
+    print('读取图片到内存...')
     for img_path in tqdm(img_list):
         frame = cv2.imread(img_path)
         frames.append(frame)
@@ -59,6 +61,7 @@ def get_smoothened_boxes(boxes, T):
 	return boxes
 
 def face_detect(images):
+	print('即将开始人脸检测...')
 	detector = face_detection.FaceAlignment(face_detection.LandmarksType._2D, 
 											flip_input=False, device=device)
 
@@ -96,6 +99,7 @@ def face_detect(images):
 	results = [[image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
 
 	del detector
+	print('人脸检测完成')
 	return results 
 
 if __name__ == "__main__":
@@ -114,6 +118,7 @@ if __name__ == "__main__":
     face_det_results = face_detect(frames) 
     coord_list = []
     idx = 0
+    print(f"共检测到{len(face_det_results)}张人脸")
     for frame,coords in face_det_results:        
         #x1, y1, x2, y2 = bbox
         resized_crop_frame = cv2.resize(frame,(args.img_size, args.img_size)) #,interpolation = cv2.INTER_LANCZOS4)
@@ -121,5 +126,6 @@ if __name__ == "__main__":
         coord_list.append(coords)
         idx = idx + 1
 	
+    print(f"写入数据到坐标文件:{coords_path}")
     with open(coords_path, 'wb') as f:
         pickle.dump(coord_list, f)
