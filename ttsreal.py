@@ -188,83 +188,79 @@ class VoitsTTS(BaseTTS):
                     idx += self.chunk 
 
 class GSVV2TTS(BaseTTS):
-    def txt_to_audio(self,msg): 
+    def txt_to_audio(self, msg): 
+        # 将输入的文本消息转换为音频
         self.stream_tts(
             self.gpt_sovits(
-                msg,
-                self.opt.REF_FILE,  
-                self.opt.REF_TEXT,
-                "zh", #en args.language,
-                self.opt.TTS_SERVER, #"http://127.0.0.1:5000", #args.server_url,
+                msg,  # 待转换的文本
+                self.opt.REF_FILE,  # 参考音频文件的路径
+                self.opt.REF_TEXT,  # 参考文本，用于音频合成
+                "zh",  # 语言参数，这里指定为中文
+                self.opt.TTS_SERVER,  # TTS服务器的URL
             )
         )
 
-    def gpt_sovits(self, text, reffile, reftext,language, server_url) -> Iterator[bytes]:
-        start = time.perf_counter()
-        req={
-            'text':text,
-            "text_lang": language,
-            "ref_audio_path": reffile,
-            "aux_ref_audio_paths": [],
-            "prompt_lang": "zh",
-            "prompt_text": reftext,
-            "top_k": 5,
-            "top_p": 1.0,
-            "temperature": 1.0,
-            "text_split_method": "cut0",
-            "batch_size": 1,
-            "batch_threshold": 0.75,
-            "split_bucket": True,
-            "speed_factor": 1.0,
-            "fragment_interval": 0.3,
-            "seed": -1,
-            "media_type": "wav",
-            "streaming_mode": True,
-            "parallel_infer": True,
-            "repetition_penalty": 1.35
+    def gpt_sovits(self, text, reffile, reftext, language, server_url) -> Iterator[bytes]:
+        # 使用gpt_sovits模型将文本转换为音频，返回音频数据流
+        start = time.perf_counter()  # 记录开始时间
+        req = {
+            'text': text,  # 要转换的文本
+            "text_lang": language,  # 文本的语言
+            "ref_audio_path": reffile,  # 参考音频文件路径
+            "aux_ref_audio_paths": [],  # 辅助参考音频路径列表
+            "prompt_lang": "zh",  # 提示的语言，这里是中文
+            "prompt_text": reftext,  # 提示文本
+            "top_k": 5,  # 采样时考虑的最高概率的k个选项
+            "top_p": 1.0,  # 采样时的核采样参数
+            "temperature": 1.0,  # 采样的温度参数，影响生成的随机性
+            "text_split_method": "cut0",  # 文本分割方法
+            "batch_size": 1,  # 每次处理的批次大小
+            "batch_threshold": 0.75,  # 批处理的阈值
+            "split_bucket": True,  # 是否使用分割桶
+            "speed_factor": 1.0,  # 音频播放的速度因子
+            "fragment_interval": 0.3,  # 音频片段间隔
+            "seed": -1,  # 随机种子
+            "media_type": "wav",  # 媒体类型，指定为wav格式
+            "streaming_mode": True,  # 是否使用流模式
+            "parallel_infer": True,  # 是否并行推理
+            "repetition_penalty": 1.35  # 重复惩罚系数
         }
-        # req["text"] = text
-        # req["text_language"] = language
-        # req["character"] = character
-        # req["emotion"] = emotion
-        # #req["stream_chunk_size"] = stream_chunk_size  # you can reduce it to get faster response, but degrade quality
-        # req["streaming_mode"] = True
+        # 发送POST请求到TTS服务器
         res = requests.post(
             f"{server_url}/tts",
-            json=req,
-            stream=True,
+            json=req,  # 请求体为JSON格式
+            stream=True,  # 以流方式接收响应
         )
-        end = time.perf_counter()
-        print(f"gpt_sovits Time to make POST: {end-start}s")
+        end = time.perf_counter()  # 记录结束时间
+        print(f"gpt_sovits Time to make POST: {end - start}s")  # 打印请求所耗时间
 
-        if res.status_code != 200:
-            print("Error:", res.text)
+        if res.status_code != 200:  # 检查请求是否成功
+            print("Error:", res.text)  # 打印错误信息
             return
             
-        first = True
-        for chunk in res.iter_content(chunk_size=32000): # 1280 32K*20ms*2
-            if first:
-                end = time.perf_counter()
-                print(f"gpt_sovits v2 Time to first chunk: {end-start}s")
-                first = False
-            if chunk and self.state==State.RUNNING:
-                yield chunk
+        first = True  # 标志变量，指示是否为第一次接收音频块
+        for chunk in res.iter_content(chunk_size=32000):  # 每次读取32KB的音频数据
+            if first:  # 如果是第一次接收
+                end = time.perf_counter()  # 记录结束时间
+                print(f"gpt_sovits v2 Time to first chunk: {end - start}s")  # 打印第一次接收所耗时间
+                first = False  # 设置标志为False，表示已接收过第一次数据
+            if chunk and self.state == State.RUNNING:  # 检查块是否有效且状态为运行中
+                yield chunk  # 返回音频数据块
 
-        print("gpt_sovits v2 response.elapsed:", res.elapsed)
+        print("gpt_sovits v2 response.elapsed:", res.elapsed)  # 打印响应所消耗的时间
 
-    def stream_tts(self,audio_stream):
-        for chunk in audio_stream:
-            if chunk is not None and len(chunk)>0:          
-                stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
-                stream = resampy.resample(x=stream, sr_orig=32000, sr_new=self.sample_rate)
-                #byte_stream=BytesIO(buffer)
-                #stream = self.__create_bytes_stream(byte_stream)
-                streamlen = stream.shape[0]
-                idx=0
-                while streamlen >= self.chunk:
-                    self.parent.put_audio_frame(stream[idx:idx+self.chunk])
-                    streamlen -= self.chunk
-                    idx += self.chunk 
+    def stream_tts(self, audio_stream):
+        # 将音频流转换为音频帧
+        for chunk in audio_stream:  # 遍历音频流中的每一个块
+            if chunk is not None and len(chunk) > 0:  # 检查块有效性
+                stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767  # 将音频块转换为浮点型
+                stream = resampy.resample(x=stream, sr_orig=32000, sr_new=self.sample_rate)  # 重采样为目标采样率
+                streamlen = stream.shape[0]  # 获取音频流的长度
+                idx = 0  # 初始化索引
+                while streamlen >= self.chunk:  # 当剩余音频长度大于等于设置的块大小
+                    self.parent.put_audio_frame(stream[idx:idx + self.chunk])  # 将音频帧发送到父对象
+                    streamlen -= self.chunk  # 减去已处理的块大小
+                    idx += self.chunk  # 更新索引
 
 
 ###########################################################################################
